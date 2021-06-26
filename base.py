@@ -15,6 +15,7 @@ df_parts = pd.read_excel(schema['PARTS'])
 df_vendors = pd.read_excel(schema['VENDORS'])
 df_quotes = pd.read_excel(schema['QUOTES'])
 df_POs = pd.read_excel(schema['POs'])
+df_PL = pd.read_excel(schema['PartsList'])
 
 #region Create Tables
 
@@ -67,13 +68,20 @@ def createPOTable():
     )
     con.commit()
 
-
+def createPartsList():
+    cur.execute("""CREATE TABLE PL(
+        FN INT PRIMARY KEY NOT NULL,
+        PN TEXT NOT NULL,
+        QTY INT NOT NULL,
+        FOREIGN KEY(PN) REFERENCES PARTS(PN))"""
+    )
 
 def createAllTables():
     createPartsTable()
     createVendorsTable()
     createQuotesTable()
     createPOTable()
+    createPartsList()
 
 #endregion
 
@@ -100,19 +108,19 @@ def foreignKeyCheck(copycolumn,mastercolumn):
 
 #region Check functions
 
-def checkPartsExcel():
+def checkParts():
     #Check to make sure all primary keys are unique
     primaryKeyCheck(df_parts['PN'])
     return None
     
-def checkVendorsExcel():
+def checkVendors():
 
     #Check to make sure all primary keys are unique
     primaryKeyCheck(df_vendors['ID'])
 
     return None
 
-def checkQuotesExcel():
+def checkQuotes():
 
     #Check to make sure all primary keys are unique
     primaryKeyCheck(df_quotes['PN'])
@@ -125,7 +133,7 @@ def checkQuotesExcel():
 
     return None
 
-def checkPOsExcel():
+def checkPOs():
 
     #Check to make sure all primary keys are unique
     primaryKeyCheck(df_POs['ID'])
@@ -138,6 +146,16 @@ def checkPOsExcel():
 
     return None
 
+def checkPartsList():
+
+    #Check to make sure all primary keys are uniuqe
+    primaryKeyCheck(df_PL['FN'])
+
+    #Check to make sure pn column is in the parts table
+    foreignKeyCheck(df_PL['PN'],df_parts['PN'])
+
+    return None
+
 #endregion
 
 #region Read tables
@@ -145,7 +163,7 @@ def checkPOsExcel():
 def readPartsExcel():
     '''Reads the Excel Parts table into the database'''
 
-    checkPartsExcel()
+    checkParts()
 
     df = df_parts
     for index,row in df.iterrows():
@@ -158,7 +176,7 @@ def readPartsExcel():
 
 def readVendorsExcel():
 
-    checkVendorsExcel()
+    checkVendors()
 
     '''Reads the Excel Vendors table into the database'''
     df = df_vendors
@@ -170,7 +188,7 @@ def readVendorsExcel():
 
 def readQuotesExcel():
 
-    checkQuotesExcel()
+    checkQuotes()
 
     '''Reads the Excel Quotes table into the database'''
     df = df_quotes
@@ -184,7 +202,7 @@ def readQuotesExcel():
     
 def readPOsExcel():
 
-    checkPOsExcel()
+    checkPOs()
 
     df_POs['DATEPLACED'] = df_POs['DATEPLACED'].astype(str)
     df_POs['DATERECEIVED'] = df_POs['DATERECEIVED'].astype(str)
@@ -195,6 +213,27 @@ def readPOsExcel():
         )
     con.commit()
 
+def readPartsListExcel():
+
+    checkPartsList()
+
+    for index, row in df_PL.iterrows():
+        cur.execute("""INSERT INTO PL(FN,PN,QTY) VALUES(?,?,?)""",(row['FN'],row['PN'],row['QTY']))
+        con.commit()
+
 #endregion
+
+def ShortageList():
+
+    cur.execute("""SELECT PARTS.PN,PARTS.QTY, totals.Total_Required, (totals.Total_Required - PARTS.QTY) Shortage
+    FROM PARTS
+    INNER JOIN
+    (SELECT PN, (sum(QTY)) "Total_Required"
+    FROM PL
+    GROUP BY PN) totals
+    ON PARTS.PN = totals.PN
+    WHERE Shortage > 0""")
+
+    return cur.fetchall()
 
 
