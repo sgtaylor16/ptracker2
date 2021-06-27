@@ -1,7 +1,8 @@
 import pandas as pd
 import sqlite3 as sql3
 
-con = sql3.connect("example.db")
+#con = sql3.connect("example.db")
+con = sql3.connect(":memory:")
 cur = con.cursor()
 
 schema = dict()
@@ -223,7 +224,7 @@ def readPartsListExcel():
 
 #endregion
 
-def ShortageList():
+def ShortageList(filepath):
 
     cur.execute("""SELECT PARTS.PN,PARTS.QTY, totals.Total_Required, (totals.Total_Required - PARTS.QTY) Shortage
     FROM PARTS
@@ -234,6 +235,29 @@ def ShortageList():
     ON PARTS.PN = totals.PN
     WHERE Shortage > 0""")
 
-    return cur.fetchall()
+    tuplist = cur.fetchall()
 
+    df = pd.DataFrame(columns = ['PN','Part_Name','Total_Required', 'On_Hand','Shortage'],
+        data = tuplist)
+
+
+    return df.to_csv(filepath,index=False)
+
+def SummaryList(filepath):
+
+    cur.execute("""SELECT PARTS.PN, PARTS.PARTNAME, PARTS.QTY, totals.Total_Required, (totals.Total_Required - PARTS.QTY) Shortage
+    FROM PARTS
+    INNER JOIN
+    (SELECT PN, (sum(QTY)) "Total_Required"
+    FROM PL
+    GROUP BY PN) totals
+    ON PARTS.PN = totals.PN
+    """)
+
+    tuplelist = cur.fetchall()
+
+    df = pd.DataFrame(columns = ['PN','Part_Name','Total_Required', 'On_Hand','Shortage'],
+        data = tuplelist)
+
+    return df.to_csv(filepath,index=False)
 

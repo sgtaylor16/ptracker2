@@ -1,8 +1,19 @@
  <html>
     <head>
         <style>
-            text {color:black}
-        
+            text {color: black;}
+            table tr td {
+                border: 1px solid black;
+            }
+
+            table {
+                border-collapse: collapse;
+                width: 50%;
+            }
+
+            td {
+                text-align: center;
+            }
         </style>
     
     
@@ -11,7 +22,16 @@
 
     <body>
         <h1>Parts Summary</h1>
-            <div id="ptable"></div>
+            <div id="tablediv"></div>
+            <table id="ptable">
+                <tr>
+                    <th>Part Number</th>
+                    <th>Part Name</th>
+                    <th>On-Hand</th>
+                    <th>Total-Needed</th>
+                    <th>Shortage</th>
+                </tr>
+            </table>
             <svg id="PartSummary"></svg>
         
         <script>
@@ -19,19 +39,19 @@
             var intdata, mybody, parsedCSV,outputData;
 
 
-            d3.csv("summary.csv")
+            d3.csv("newcheck.csv")
                 .then(function(data){
                     intdata = data;
                     outputData = data.map( Object.values );
-                    mybody = d3.select("div#ptable")
-                                .append("table")
-                                .selectAll("tr")
+                    mybody = d3.select("table#ptable")
+                                .selectAll("tr.data")
                                 .data(outputData,function(d){
                                     console.log(d)
                                     return d;
                                 })
                                 .enter()
                                 .append("tr")
+                                .style("class","data")
                                 .selectAll("td")
                                 .data(function(d){
                                     console.log(d)
