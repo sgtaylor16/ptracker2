@@ -1,0 +1,51 @@
+ <html>
+    <head>
+        <style>
+            text {color:black}
+        
+        </style>
+    
+    
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+    </head>
+
+    <body>
+        <h1>Parts Summary</h1>
+            <div id="ptable"></div>
+            <svg id="PartSummary"></svg>
+        
+        <script>
+            var svgel = d3.select("svg");
+            var intdata, mybody, parsedCSV,outputData;
+
+
+            d3.csv("summary.csv")
+                .then(function(data){
+                    intdata = data;
+                    outputData = data.map( Object.values );
+                    mybody = d3.select("div#ptable")
+                                .append("table")
+                                .selectAll("tr")
+                                .data(outputData,function(d){
+                                    console.log(d)
+                                    return d;
+                                })
+                                .enter()
+                                .append("tr")
+                                .selectAll("td")
+                                .data(function(d){
+                                    console.log(d)
+                                    return d;
+                                })
+                                .enter()
+                                .append("td")
+                                .text(d => d)
+                                
+        
+                                
+                } 
+            )
+        </script>
+    </body>
+
+ </html>
