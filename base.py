@@ -1,5 +1,7 @@
 import pandas as pd
 import sqlite3 as sql3
+from dateutil.parser import parse
+import datetime
 
 #con = sql3.connect("example.db")
 con = sql3.connect(":memory:")
@@ -260,4 +262,43 @@ def SummaryList(filepath):
         data = tuplelist)
 
     return df.to_csv(filepath,index=False)
+
+def SummaryListDelivery():
+   
+    cur.execute("""SELECT pldata.PN, pldata.PARTNAME, pldata.QTY, pldata.Total_Required,pldata.SHORTAGE, PO.DATEPLACED,PO.LEADTIME_WKS
+    FROM 
+    (SELECT PARTS.PN, PARTS.PARTNAME, PARTS.QTY, totals.Total_Required, (totals.Total_Required - PARTS.QTY) Shortage
+    FROM PARTS
+    INNER JOIN
+    (SELECT PN, (sum(QTY)) "Total_Required"
+    FROM PL
+    GROUP BY PN) totals
+    ON PARTS.PN = totals.PN) pldata
+    LEFT JOIN
+    PO
+    ON pldata.PN = PO.PN""")
+
+    tuplist = cur.fetchall()
+
+    df = pd.DataFrame(columns = ['PN','PartName','QtyOnHand','Total Required','Shortage','DatePlaced','LeadTime'],
+    data = tuplist)
+
+    def addwks(startdate,leadtime):
+        try:
+            newtd = datetime.timedelta(leadtime)
+            return startdate + newtd
+        except ValueError:
+            return None
+
+    def tryparse(x):
+        try:
+            return parse(x)
+        except TypeError:
+            return x
+
+
+    df['DatePlaced'] = df['DatePlaced'].apply(tryparse)
+    df['DateExpected'] = df.apply(lambda row: addwks(row['DatePlaced'],row['LeadTime']),axis =1)
+
+    return df
 
