@@ -169,6 +169,12 @@ def readPartsExcel():
     checkParts()
 
     df = df_parts
+
+    df['MPREDICTED'] = df['MPREDICTED'].astype(str)
+    df['MACTUAL'] = df['MACTUAL'].astype(str)
+    df['FPREDICTED'] = df['FPREDICTED'].astype(str)
+    df['FACTUAL'] = df['FACTUAL'].astype(str)
+
     for index,row in df.iterrows():
 
         cur.execute("""INSERT INTO PARTS (PN,PARTNAME,QTY,MPREDICTED,MACTUAL,FPREDICTED,FACTUAL)
