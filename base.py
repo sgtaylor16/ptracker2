@@ -47,6 +47,7 @@ def createQuotesTable():
         VENDORID INT NOT NULL,
         QUOTEDATE TEXT,
         PN TEXT NOT NULL,
+        QTY INT,
         NRE REAL,
         VARIABLE REAL,
         LEADTIME_WKS INT,
@@ -85,6 +86,15 @@ def createAllTables():
     createQuotesTable()
     createPOTable()
     createPartsList()
+
+#region Create Excel Tables
+
+def createPartsExcelIInput(path):
+    df = pd.DataFrame(columns = ['PN','PARTNAME','QTY','MPREDICTED','MACTUAL','FPREDICTED','FACTUAL'])
+    df.to_excel(path + '/PARTS.xlsx')
+    return None
+
+#endregion
 
 #endregion
 
@@ -126,7 +136,7 @@ def checkVendors():
 def checkQuotes():
 
     #Check to make sure all primary keys are unique
-    primaryKeyCheck(df_quotes['PN'])
+    primaryKeyCheck(df_quotes['ID'])
 
     #Check to make sure vendorID column is in the vendors table
     foreignKeyCheck(df_quotes['VENDORID'],df_vendors['ID'])
@@ -229,6 +239,12 @@ def readPartsListExcel():
     for index, row in df_PL.iterrows():
         cur.execute("""INSERT INTO PL(FN,PN,QTY) VALUES(?,?,?)""",(row['FN'],row['PN'],row['QTY']))
         con.commit()
+
+def readAllExcel():
+    readPartsExcel()
+    readVendorsExcel()
+    readQuotesExcel()
+    readPOsExcel()
 
 #endregion
 

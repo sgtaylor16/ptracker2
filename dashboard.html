@@ -32,17 +32,34 @@
                     <th>Shortage</th>
                 </tr>
             </table>
+        <h1>Drawing Summary</h1>
             <svg id="PartSummary"></svg>
         
         <script>
             var svgel = d3.select("svg");
-            var intdata, mybody, parsedCSV,outputData;
+            var intdata, mybody, parsedCSV,outputData,onlynewdata
 
+            function isNewPart(value){
+                return value[0].includes('303');
+            }
+
+            function colortest(row){
+                if(row[4] > 0){
+                    return 'red';
+                }
+                else{
+                    return 'white';
+                }
+                
+            }
 
             d3.csv("newcheck.csv")
                 .then(function(data){
-                    intdata = data;
-                    outputData = data.map( Object.values );
+                    intdata = data; 
+
+                    outputData = data.map( Object.values ); //Turns the object into an array of arrays.
+                    onlynewdata = outputData.filter(isNewPart); //This filters the output data to only include new parts
+
                     mybody = d3.select("table#ptable")
                                 .selectAll("tr.data")
                                 .data(outputData,function(d){
@@ -52,6 +69,14 @@
                                 .enter()
                                 .append("tr")
                                 .style("class","data")
+                                .style('background-color',function(d){
+                                    if(d[4] > 0){
+                                        return '#ffcccb';
+                                        }
+                                        else{
+                                             return 'white';
+                                        }
+                                })
                                 .selectAll("td")
                                 .data(function(d){
                                     console.log(d)
@@ -59,10 +84,7 @@
                                 })
                                 .enter()
                                 .append("td")
-                                .text(d => d)
-                                
-        
-                                
+                                .text(d => d)        
                 } 
             )
         </script>
