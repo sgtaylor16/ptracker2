@@ -30,6 +30,9 @@
                     <th>On-Hand</th>
                     <th>Total-Needed</th>
                     <th>Shortage</th>
+                    <th>Date Placed</th>
+                    <th>Lead Time</th>
+                    <th>Date Expected</th>
                 </tr>
             </table>
         <h1>Drawing Summary</h1>
@@ -53,7 +56,7 @@
                 
             }
 
-            d3.csv("newcheck.csv")
+            d3.csv("Delivery.csv")
                 .then(function(data){
                     intdata = data; 
 

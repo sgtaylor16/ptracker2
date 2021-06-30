@@ -1,3 +1,4 @@
+from numpy import str0
 import pandas as pd
 import sqlite3 as sql3
 from dateutil.parser import parse
@@ -66,6 +67,7 @@ def createPOTable():
         VARIABLE REAL,
         LEADTIME_WKS INT,
         DATEPLACED TEXT,
+        DATEEXPECTED TEXT,
         DATERECEIVED TEXT,
         FOREIGN KEY(VENDORID) REFERENCES VENDORS(ID),
         FOREIGN KEY(PN) REFERENCES PARTS(PN))"""
@@ -224,11 +226,12 @@ def readPOsExcel():
     checkPOs()
 
     df_POs['DATEPLACED'] = df_POs['DATEPLACED'].astype(str)
+    df_POs['DATEEXPECTED'] = df_POs['DATEEXPECTED'].astype(str)
     df_POs['DATERECEIVED'] = df_POs['DATERECEIVED'].astype(str)
     for index, row in df_POs.iterrows():
-        cur.execute("""INSERT INTO PO(ID,VENDORID,PN,QTY,NRE,VARIABLE,LEADTIME_WKS,DATEPLACED,DATERECEIVED)
-        VALUES(?,?,?,?,?,?,?,?,?)""",(row["ID"],row["VENDORID"],row["PN"],row["QTY"],row["NRE"],row["VARIABLE"],
-        row["LEADTIME_WKS"],row["DATEPLACED"],row["DATERECEIVED"])
+        cur.execute("""INSERT INTO PO(ID,VENDORID,PN,QTY,NRE,VARIABLE,LEADTIME_WKS,DATEPLACED,DATEEXPECTED,DATERECEIVED)
+        VALUES(?,?,?,?,?,?,?,?,?,?)""",(row["ID"],row["VENDORID"],row["PN"],row["QTY"],row["NRE"],row["VARIABLE"],
+        row["LEADTIME_WKS"],row["DATEPLACED"],row['DATEEXPECTED'],row["DATERECEIVED"])
         )
     con.commit()
 
@@ -287,7 +290,7 @@ def SummaryList(filepath):
 
 def SummaryListDelivery():
    
-    cur.execute("""SELECT pldata.PN, pldata.PARTNAME, pldata.QTY, pldata.Total_Required,pldata.SHORTAGE, PO.DATEPLACED,PO.LEADTIME_WKS
+    cur.execute("""SELECT pldata.PN, pldata.PARTNAME, pldata.QTY, pldata.Total_Required,pldata.SHORTAGE, PO.DATEPLACED,PO.LEADTIME_WKS,PO.DATEEXPECTED
     FROM 
     (SELECT PARTS.PN, PARTS.PARTNAME, PARTS.QTY, totals.Total_Required, (totals.Total_Required - PARTS.QTY) Shortage
     FROM PARTS
@@ -302,25 +305,35 @@ def SummaryListDelivery():
 
     tuplist = cur.fetchall()
 
-    df = pd.DataFrame(columns = ['PN','PartName','QtyOnHand','Total Required','Shortage','DatePlaced','LeadTime'],
+    df = pd.DataFrame(columns = ['PN','PartName','QtyOnHand','Total Required','Shortage','DatePlaced','LeadTime','DateExpected'],
     data = tuplist)
 
-    def addwks(startdate,leadtime):
-        try:
-            newtd = datetime.timedelta(leadtime)
-            return startdate + newtd
-        except ValueError:
-            return None
-
+    def addwks(startdate,leadtime,dateexpected):
+        if (type(dateexpected) == pd._libs.tslibs.timestamps.Timestamp) or (type(dateexpected) == datetime.datetime):
+            return dateexpected
+        else:
+            try:
+                newtd = datetime.timedelta(weeks = leadtime)
+                return startdate + newtd
+            except ValueError:
+                return dateexpected
+        
     def tryparse(x):
         try:
             return parse(x)
-        except TypeError:
+        except:
             return x
 
 
+
     df['DatePlaced'] = df['DatePlaced'].apply(tryparse)
-    df['DateExpected'] = df.apply(lambda row: addwks(row['DatePlaced'],row['LeadTime']),axis =1)
+    df['DateExpected'] = df['DateExpected'].apply(tryparse)
+
+    
+    df['DateExpected'] = df.apply(lambda row: addwks(row['DatePlaced'],row['LeadTime'],row['DateExpected']),axis =1)
 
     return df
+
+    def DrawingSmmary():
+        return None
 
