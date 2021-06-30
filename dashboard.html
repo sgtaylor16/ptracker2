@@ -22,7 +22,7 @@
 
     <body>
         <h1>Parts Summary</h1>
-            <div id="tablediv"></div>
+            <div id="deliverydiv"></div>
             <table id="ptable">
                 <tr>
                     <th>Part Number</th>
@@ -36,7 +36,16 @@
                 </tr>
             </table>
         <h1>Drawing Summary</h1>
-            <svg id="PartSummary"></svg>
+            <table id="drawingtable">
+                <tr>
+                    <th>Part Number</th>
+                    <th>Part Name</th>
+                    <th>M-Issue Predicted</th>
+                    <th>M-Issue Actual</th>
+                    <th>F-Issue Predicted</th>
+                    <th>F-Issue Actual</th>
+                </tr>
+            </table>
         
         <script>
             var svgel = d3.select("svg");
@@ -61,9 +70,10 @@
                     intdata = data; 
 
                     outputData = data.map( Object.values ); //Turns the object into an array of arrays.
-                    onlynewdata = outputData.filter(isNewPart); //This filters the output data to only include new parts
+                     
 
-                    mybody = d3.select("table#ptable")
+                    //Create the delivery table
+                    mydelivery = d3.select("table#ptable")
                                 .selectAll("tr.data")
                                 .data(outputData,function(d){
                                     console.log(d)
@@ -87,10 +97,27 @@
                                 })
                                 .enter()
                                 .append("td")
-                                .text(d => d)        
+                                .text(d => d)           
                 } 
             )
+
+        d3.csv("Drawings.csv").then(function(data){
+            //Create the drawing table
+
+            let outputData1 = data.map( Object.values ); //Turns the object into an array of arrays.
+            onlynewdata = outputData1.filter(isNewPart); //This filters the output data to only include new parts
+            let mydrawings = d3.select("table#drawingtable")
+                                        .selectAll("tr.data")
+                                        .data(onlynewdata,d =>d)
+                                        .enter()
+                                        .append("tr")
+                                        .style("class","data")
+                                        .selectAll("td")
+                                        .data(d => d)
+                                        .enter()
+                                        .append("td")
+                                        .text(d => d)              
+            })
         </script>
     </body>
-
  </html>
