@@ -313,7 +313,7 @@ def SummaryListDelivery():
             return dateexpected
         else:
             try:
-                newtd = datetime.timedelta(weeks = leadtime)
+                newtd = datetime.timedelta(weeks =  leadtime)
                 return startdate + newtd
             except ValueError:
                 return dateexpected
@@ -334,6 +334,21 @@ def SummaryListDelivery():
 
     return df
 
-    def DrawingSmmary():
-        return None
+def DrawingSummary(strfilter):
 
+    cur.execute("""SELECT PARTS.PN, PARTS.PARTNAME, PARTS.MPREDICTED, PARTS.MACTUAL,PARTS.FPREDICTED,PARTS.FACTUAL
+    FROM PARTS
+    INNER JOIN
+    (SELECT PN, (sum(QTY)) "Total_Required"
+    FROM PL
+    GROUP BY PN) totals
+    ON
+    PARTS.PN = totals.PN"""
+    )
+
+    tuplist = cur.fetchall()
+
+    df = pd.DataFrame(columns = ['PN','PartName','M Predicted','M Actual','F Predicted','F Actual'],
+        data = tuplist)
+
+    return df
