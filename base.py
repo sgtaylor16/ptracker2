@@ -14,12 +14,14 @@ schema['VENDORS'] = 'Vendors.xlsx'
 schema['QUOTES'] = 'Quotes.xlsx'
 schema['POs'] = 'POs.xlsx'
 schema['PartsList'] = 'PartsList.xlsx'
+schema['LEADTIMES'] = 'LEADTIMES.xlsx'
 
 df_parts = pd.read_excel(schema['PARTS'])
 df_vendors = pd.read_excel(schema['VENDORS'])
 df_quotes = pd.read_excel(schema['QUOTES'])
 df_POs = pd.read_excel(schema['POs'])
 df_PL = pd.read_excel(schema['PartsList'])
+df_lead = pd.read_excel(schema['LEADTIMES'])
 
 #region Create Tables
 
@@ -79,14 +81,27 @@ def createPartsList():
         FN INT PRIMARY KEY NOT NULL,
         PN TEXT NOT NULL,
         QTY INT NOT NULL,
-        FOREIGN KEY(PN) REFERENCES PARTS(PN))"""
-    )
+        FOREIGN KEY(PN) REFERENCES PARTS(PN))""")
 
-def createAllTables():
+    con.commit()
+
+def createLeadTimeTable():
+    cur.execute("""CREATE TABLE LEADTIME(
+        ID INT PRIMARY KEY NOT NULL,
+        PN TEXT NOT NULL,
+        QUOTETIME INT,
+        MFGTIME INT,
+        INSTROTIME INT,
+        FOREIGN KEY(PN) REFERENCES PARTS(PN))""")
+
+    con.commit()
+
+def createAllTables(): 
     createPartsTable()
     createVendorsTable()
     createQuotesTable()
     createPOTable()
+    createLeadTimeTable()
     createPartsList()
 
 #region Create Excel Tables
@@ -186,6 +201,7 @@ def readPartsExcel():
     df['MACTUAL'] = df['MACTUAL'].astype(str)
     df['FPREDICTED'] = df['FPREDICTED'].astype(str)
     df['FACTUAL'] = df['FACTUAL'].astype(str)
+    df['PN'] = df['PN'].astype(str)
 
     for index,row in df.iterrows():
 
@@ -214,6 +230,8 @@ def readQuotesExcel():
     '''Reads the Excel Quotes table into the database'''
     df = df_quotes
     df['QUOTEDATE'] = df['QUOTEDATE'].astype(str)
+    df['PN'] = df['PN'].astype(str)
+
     for index, row in df.iterrows():
         cur.execute("""INSERT INTO QUOTES(ID,VENDORID,QUOTEDATE,PN,NRE,VARIABLE,LEADTIME_WKS)
         VALUES(?,?,?,?,?,?,?)""",(row['ID'],row['VENDORID'],row['QUOTEDATE'],row['PN'],row['NRE'],
@@ -224,6 +242,8 @@ def readQuotesExcel():
 def readPOsExcel():
 
     checkPOs()
+
+    df_POs['PN'] = df_POs['PN'].astype(str)
 
     df_POs['DATEPLACED'] = df_POs['DATEPLACED'].astype(str)
     df_POs['DATEEXPECTED'] = df_POs['DATEEXPECTED'].astype(str)
@@ -241,14 +261,29 @@ def readPartsListExcel():
 
     for index, row in df_PL.iterrows():
         cur.execute("""INSERT INTO PL(FN,PN,QTY) VALUES(?,?,?)""",(row['FN'],row['PN'],row['QTY']))
-        con.commit()
+    
+    con.commit()
+
+def readLeadTimeExcel():
+
+    df_lead['PN'] = df_lead['PN'].astype(str)
+
+    for index,row in df_lead.iterrows():
+
+        cur.execute("""INSERT INTO LEADTIME (ID,PN,QUOTETIME,MFGTIME,INSTROTIME)
+        VALUES(?,?,?,?,?)""", (row['ID'],row['PN'],row['QUOTETIME'],row['MFGTIME'],
+        row['INSTROTIME'])
+        )
+    con.commit()
+
+    
 
 def readAllExcel():
     readPartsExcel()
     readVendorsExcel()
     readQuotesExcel()
     readPOsExcel()
-
+    readLeadTimeExcel()
 #endregion
 
 def ShortageList(filepath):
@@ -317,6 +352,8 @@ def SummaryListDelivery():
                 return startdate + newtd
             except ValueError:
                 return dateexpected
+            except TypeError:
+                return dateexpected 
         
     def tryparse(x):
         try:
