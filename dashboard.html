@@ -40,16 +40,17 @@
                 <tr>
                     <th>Part Number</th>
                     <th>Part Name</th>
-                    <th>M-Issue Predicted</th>
-                    <th>M-Issue Actual</th>
-                    <th>F-Issue Predicted</th>
-                    <th>F-Issue Actual</th>
+                    <th>M-Issue</th>
+                    <th>F-Issue</th>
                 </tr>
             </table>
+            <h1>Drawing Chart</h1>
+            <svg height="500" width="1000" id='DrawChart'></svg>
         
         <script>
             var svgel = d3.select("svg");
-            var intdata, mybody, parsedCSV,outputData,onlynewdata
+            var intdata, mybody, parsedCSV,outputData,onlynewdata,uniqueparts,intdata2,
+            partScale
 
             function isNewPart(value){
                 return value[0].includes('303');
@@ -76,7 +77,7 @@
                     mydelivery = d3.select("table#ptable")
                                 .selectAll("tr.data")
                                 .data(outputData,function(d){
-                                    console.log(d)
+                                    //console.log(d)
                                     return d;
                                 })
                                 .enter()
@@ -92,7 +93,6 @@
                                 })
                                 .selectAll("td")
                                 .data(function(d){
-                                    console.log(d)
                                     return d;
                                 })
                                 .enter()
@@ -102,13 +102,28 @@
             )
 
         d3.csv("Drawings.csv").then(function(data){
-            //Create the drawing table
 
-            let outputData1 = data.map( Object.values ); //Turns the object into an array of arrays.
-            onlynewdata = outputData1.filter(isNewPart); //This filters the output data to only include new parts
+            intdata2 = data;
+
+            let tablearray = [];
+            let partNameArray = [];
+
+            intdata2.forEach(function (d,i){
+                let array2 = [];
+                array2.push(d.PN);
+                array2.push(d.PartName);
+                array2.push(d.Missue);
+                array2.push(d.Fissue);
+                tablearray.push(array2);
+                partNameArray.push(d.PartName);
+            })
+
+            console.log(tablearray)
+
+            // #region Create the drawing table           
             let mydrawings = d3.select("table#drawingtable")
                                         .selectAll("tr.data")
-                                        .data(onlynewdata,d =>d)
+                                        .data(tablearray,d =>d)
                                         .enter()
                                         .append("tr")
                                         .style("class","data")
@@ -116,8 +131,100 @@
                                         .data(d => d)
                                         .enter()
                                         .append("td")
-                                        .text(d => d)              
+                                        .text(d => d)       
+            // #endregion    
+            
+            // #region create the drawing chart
+
+            let margin = ({"left":100,"right":100,"bottom":80,"top":80});
+            let height = document.getElementById('DrawChart').getAttribute("height");
+            let width = document.getElementById('DrawChart').getAttribute("width");
+
+            let drawsvg = d3.select("svg#DrawChart")
+
+            //Create the Scales
+
+            //X Axis
+            let timescale = d3.scaleTime()
+                            .domain([new Date('3/1/21'),new Date('3/1/23')])
+                            .range([margin.left,width-margin.right])
+ 
+            let timeAxis = d3.axisBottom()
+                            .scale(timescale)
+                            .tickFormat(d3.timeFormat("%b %y"))
+                            .ticks(d3.timeMonth.every(1));
+
+            drawsvg.append("g")
+                    .style("font","10px times")
+                    .attr("class","axis")
+                    .attr("transform","translate(0," + (height - margin.bottom) + ")")
+                    .call(timeAxis)
+            
+            //Y Axis
+             partScale = d3.scaleBand()
+                            .domain(partNameArray)
+                            .range([margin.top,height-margin.bottom])
+                            .padding(0.2);
+
+             var yAxis = drawsvg => drawsvg 
+                                    .attr("transform",'translate(' + (margin.left-75) +',0)')
+                                    .call(d3.axisRight()
+                                        .scale(partScale)
+                                        .ticks(partNameArray)
+                                        .tickSize(width - margin.left - margin.right + 75)
+                                        )
+                                    .call(g => g.select(".domain")
+                                    .remove())
+                                    .call(g => g.selectAll(".tick text")
+                                        .attr("x",4)
+                                        .attr("dy",-4))
+                                        .attr("font-size","10") 
+
+
+            drawsvg.append("g")
+                    .call(yAxis)
+                    .attr("transform","translate(100,0)")
+ 
+
+            // #endregion
+
+            // #region put the parts in
+
+            let needDate = new Date('1/15/23')
+
+            function weeksubtract(startdate,weeks){
+                let temp = startdate.getTime() - weeks * 7 * 24 *60 *60 * 1000;
+                let d = new Date();
+                d.setTime(temp);
+                return d;
+            }
+
+            //Instrumentation Bars
+            drawsvg.selectAll("rect.quote")
+                    .data(data)
+                    .join("rect")
+                    .attr("class","instro")
+                    .attr("x",function(d,i){
+                        return timescale(weeksubtract(needDate,d.InstroTime))
+                    })
+                    .attr("y",function(d,i){
+                        return partScale(d.PartName)
+                    })
+                    .attr("width",function(d,i){
+                        return timescale(needDate) - timescale(weeksubtract(needDate,d.InstroTime));
+                    })
+                    .attr("height",partScale.bandwidth()) 
+
+            //Manufacturing Bars
+            
+
+
+
+ 
+            // #endregion
             })
+
+
         </script>
     </body>
  </html>

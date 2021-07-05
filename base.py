@@ -4,8 +4,8 @@ import sqlite3 as sql3
 from dateutil.parser import parse
 import datetime
 
-#con = sql3.connect("example.db")
-con = sql3.connect(":memory:")
+con = sql3.connect("example.db")
+#con = sql3.connect(":memory:")
 cur = con.cursor()
 
 schema = dict()
@@ -225,7 +225,7 @@ def readVendorsExcel():
 
 def readQuotesExcel():
 
-    checkQuotes()
+    #checkQuotes()
 
     '''Reads the Excel Quotes table into the database'''
     df = df_quotes
@@ -276,13 +276,12 @@ def readLeadTimeExcel():
         )
     con.commit()
 
-    
-
 def readAllExcel():
     readPartsExcel()
     readVendorsExcel()
     readQuotesExcel()
     readPOsExcel()
+    readPartsListExcel()
     readLeadTimeExcel()
 #endregion
 
@@ -371,21 +370,32 @@ def SummaryListDelivery():
 
     return df
 
-def DrawingSummary(strfilter):
+def DrawingSummary():
 
-    cur.execute("""SELECT PARTS.PN, PARTS.PARTNAME, PARTS.MPREDICTED, PARTS.MACTUAL,PARTS.FPREDICTED,PARTS.FACTUAL
-    FROM PARTS
-    INNER JOIN
-    (SELECT PN, (sum(QTY)) "Total_Required"
-    FROM PL
-    GROUP BY PN) totals
+
+    cur.execute("""SELECT oldtable.PN, oldtable.PARTNAME, LEADTIME.QUOTETIME, LEADTIME.MFGTIME,LEADTIME.INSTROTIME,
+    oldtable.MACTUAL,oldtable.FACTUAL
+    FROM
+    (SELECT PARTS.PN, PARTS.PARTNAME, PARTS.MPREDICTED, PARTS.MACTUAL,PARTS.FPREDICTED,PARTS.FACTUAL
+        FROM PARTS
+        INNER JOIN
+        (SELECT PN, (sum(QTY)) "Total_Required"
+        FROM PL
+        GROUP BY PN) totals
+        ON
+        PARTS.PN = totals.PN) oldtable
+    LEFT JOIN
+    LEADTIME
     ON
-    PARTS.PN = totals.PN"""
+    LEADTIME.PN = oldtable.PN
+    WHERE
+    oldtable.PN LIKE '303%'"""
     )
 
     tuplist = cur.fetchall()
 
-    df = pd.DataFrame(columns = ['PN','PartName','M Predicted','M Actual','F Predicted','F Actual'],
+    
+    df = pd.DataFrame(columns = ['PN','PartName','QuoteTime','MfgTime','InstroTime','Missue','Fissue'],
         data = tuplist)
 
     return df
