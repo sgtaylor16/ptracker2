@@ -116,6 +116,7 @@
                 array2.push(d.Fissue);
                 tablearray.push(array2);
                 partNameArray.push(d.PartName);
+
             })
 
             console.log(tablearray)
@@ -192,6 +193,7 @@
 
             let needDate = new Date('1/15/23')
 
+
             function weeksubtract(startdate,weeks){
                 let temp = startdate.getTime() - weeks * 7 * 24 *60 *60 * 1000;
                 let d = new Date();
@@ -199,21 +201,59 @@
                 return d;
             }
 
+            intdata2.forEach(function(d,i){
+                d.InstroDate = weeksubtract(needDate,d.InstroTime)
+                d.MfgDate = weeksubtract(d.InstroDate,d.MfgTime)
+                d.QuoteDate = weeksubtract(d.MfgDate,d.QuoteTime)
+            })
+
             //Instrumentation Bars
-            drawsvg.selectAll("rect.quote")
+            drawsvg.selectAll("rect.instro")
                     .data(data)
                     .join("rect")
                     .attr("class","instro")
                     .attr("x",function(d,i){
-                        return timescale(weeksubtract(needDate,d.InstroTime))
+                        return timescale(d.InstroDate)
                     })
                     .attr("y",function(d,i){
                         return partScale(d.PartName)
                     })
                     .attr("width",function(d,i){
-                        return timescale(needDate) - timescale(weeksubtract(needDate,d.InstroTime));
+                        return timescale(needDate) - timescale(d.InstroDate);
                     })
-                    .attr("height",partScale.bandwidth()) 
+                    .attr("height",partScale.bandwidth())
+                    .attr("rx",partScale.bandwidth()/8)
+                    .attr("fill","white")
+                    .attr("stroke","black")
+
+            drawsvg.selectAll("rect.mfg")
+                    .data(data)
+                    .join("rect")
+                    .attr("class","mfg")
+                    .attr("x", d => timescale(d.MfgDate))
+                    .attr("y", d => partScale(d.PartName))
+                    .attr("width",function(d,i){
+                        return timescale(d.InstroDate) - timescale(d.MfgDate)
+                    })
+                    .attr("height",partScale.bandwidth())
+                    .attr("fill",'white')
+                    .attr("stroke","black")
+                    .attr("rx",partScale.bandwidth()/8)
+
+            drawsvg.selectAll("rect.quote")
+                    .data(data)
+                    .join("rect")
+                    .attr("class","quote")
+                    .attr("x", d => timescale(d.QuoteDate))
+                    .attr("y",d => partScale(d.PartName))
+                    .attr("width",function(d,i){
+                        return timescale(d.MfgDate) - timescale(d.QuoteDate)
+                    })
+                    .attr("height",partScale.bandwidth())
+                    .attr("fill","white")
+                    .attr("stroke","black")
+                    .attr("rx",partScale.bandwidth()/8)
+
 
             //Manufacturing Bars
             
