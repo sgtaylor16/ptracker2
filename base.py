@@ -213,6 +213,8 @@ def readPartsExcel():
 
 def readVendorsExcel():
 
+    df_vendors['PN'] = df_vendors['PN'].astype(str)
+
     checkVendors()
 
     '''Reads the Excel Vendors table into the database'''
@@ -255,7 +257,9 @@ def readPOsExcel():
         )
     con.commit()
 
-def readPartsListExcel():
+def readPartsListExcel():f
+
+    df_PL['PN'] = df_PL['PN'].astype(str)
 
     checkPartsList()
 
@@ -398,4 +402,4 @@ def DrawingSummary():
     df = pd.DataFrame(columns = ['PN','PartName','QuoteTime','MfgTime','InstroTime','Missue','Fissue'],
         data = tuplist)
 
-    return df
+    return df 
